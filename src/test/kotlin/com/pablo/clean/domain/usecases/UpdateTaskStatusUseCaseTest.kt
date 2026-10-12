@@ -32,10 +32,3 @@ class UpdateTaskStatusUseCaseTest {
         }
     }
 }
-
-// Mock implementation to allow compilation
-class UpdateTaskStatusUseCase(private val repository: ITaskRepository) {
-    fun execute(id: String, newStatus: TaskStatus) {
-        throw NotImplementedError()
-    }
-}
