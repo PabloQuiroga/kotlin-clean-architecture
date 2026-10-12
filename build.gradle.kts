@@ -1,6 +1,11 @@
 plugins {
     // Plugin esencial para compilación de Kotlin en la JVM
     kotlin("jvm") version "2.4.20"
+    application
+}
+
+application {
+    mainClass.set("com.pablo.clean.MainKt")
 }
 
 group = "com.pablo"
