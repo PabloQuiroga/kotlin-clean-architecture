@@ -19,6 +19,9 @@ dependencies {
 
     // JUnit 5: Para la validación de calidad
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.0")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
+
 }
 
 tasks.test {
