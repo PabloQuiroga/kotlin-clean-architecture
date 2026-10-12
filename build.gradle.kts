@@ -1,0 +1,29 @@
+plugins {
+    // Plugin esencial para compilación de Kotlin en la JVM
+    kotlin("jvm") version "2.4.20"
+}
+
+group = "com.pablo"
+version = "1.0-SNAPSHOT"
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Corrutinas: Para el manejo asíncrono y Flow
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+
+    // Koin: Para la Inyección de Dependencias (según ADR-003)
+    implementation("io.insert-koin:koin-core:3.5.0")
+
+    // JUnit 5: Para la validación de calidad
+    testImplementation("org.junit.jupiter:junit-jupiter:5.10.0")
+}
+
+tasks.test {
+    useJUnitPlatform()
+    testLogging {
+        events("passed", "skipped", "failed")
+    }
+}
