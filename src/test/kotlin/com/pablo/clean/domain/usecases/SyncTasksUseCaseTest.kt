@@ -42,10 +42,3 @@ class SyncTasksUseCaseTest {
         verify(repository).save(argThat { this.description == "New Description" })
     }
 }
-
-// Mock implementation to allow compilation
-class SyncTasksUseCase(private val repository: ITaskRepository) {
-    fun execute(tasks: List<TaskDTO>) {
-        throw NotImplementedError()
-    }
-}
