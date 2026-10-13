@@ -1,34 +1,39 @@
-# Especificación: Motor de Sincronización de Tareas (Task Sync Engine)
+# Especificación: motor de sincronización de tareas
 
-## 1. Objetivo
-Implementar un sistema de sincronización de tareas que gestione la ingesta de datos desde una fuente externa, la validación de la lógica de negocio y la persistencia local, aplicando una separación estricta de responsabilidades mediante Clean Architecture.
+## 1. Alcance actual
 
-## 2. Requerimientos Funcionales
+El proyecto demuestra la sincronización de tareas con datos de ejemplo. No consume una API externa ni guarda datos de forma durable. El repositorio mantiene las tareas en memoria durante la ejecución del proceso.
 
-### 2.1 Flujo de Datos
-- **Ingesta de Tareas**: El sistema debe poder recibir una lista de tareas (ID, descripción, prioridad y estado).
-- **Validación de Dominio**: Cada tarea debe pasar por un proceso de validación (ej: una tarea no puede estar "Completada" si no tiene una descripción).
-- **Persistencia Local**: Las tareas validadas deben almacenarse en un repositorio local para evitar llamadas redundantes a la API.
-- **Gestión de Estados**: El sistema debe permitir cambiar la transición de estados de una tarea (Pendiente $\rightarrow$ Procesando $\rightarrow$ Completado).
+## 2. Requerimientos funcionales
 
-### 2.2 Reglas de Negocio
-- **Priorización**: El sistema debe procesar las tareas en orden de prioridad (Alta $\rightarrow$ Media $\rightarrow$ Baja).
-- **Deduplicación**: Si llega una tarea con un ID que ya existe localmente, el sistema debe actualizar la información existente en lugar de crear un duplicado.
+### 2.1 Flujo de datos
 
-## 3. Requerimientos No Funcionales
+- **Entrada**: `Main` entrega al controlador una lista de tareas de ejemplo con ID, descripción, prioridad y estado.
+- **Mapeo y validación**: el controlador convierte los DTO a entidades de dominio. Las entradas que no cumplen las reglas de la entidad se omiten.
+- **Almacenamiento**: las tareas válidas se guardan en el repositorio en memoria. Guardar un ID existente reemplaza la tarea anterior.
+- **Consulta reactiva**: el repositorio expone el estado actual y sus cambios como `Flow`.
+- **Estados**: solo se permiten Pendiente → Procesando y Procesando → Completado.
 
-### 3.1 Arquitectura (Clean Architecture)
-El sistema debe dividirse en tres capas estrictas:
-- **Capa de Dominio (Domain)**: Contiene las entidades y los casos de uso. No depende de ninguna otra capa.
-- **Capa de Datos (Data)**: Implementa los repositorios y la comunicación con la API/DB. Depende solo del Dominio.
-- **Capa de API/Presentación (API)**: Gestiona la entrada y salida de datos. Depende de las capas de Dominio y Datos.
+### 2.2 Reglas de negocio
 
-### 3.2 Rendimiento y Concurrencia
-- **Procesamiento No Bloqueante**: El uso de Corrutinas de Kotlin es obligatorio para asegurar que la UI o el hilo principal no se bloqueen durante la sincronización.
-- **Consistencia de Datos**: Asegurar que el estado de la tarea sea consistente incluso si hay múltiples intentos de actualización simultáneos.
+- **Prioridad**: sincronizar en orden Alta → Media → Baja y conservar el orden de entrada entre tareas con igual prioridad.
+- **Deduplicación**: una tarea con un ID existente reemplaza a la anterior sin crear otra entrada.
+- **Concurrencia**: las escrituras y actualizaciones se serializan; la validación de una transición se ejecuta dentro de la actualización atómica para usar el estado más reciente.
 
-## 4. Criterios de Éxito
-El proyecto se considera exitoso si:
-1. Se puede sincronizar una lista de tareas y filtrar las inválidas.
-2. Las tareas se almacenan y recuperan correctamente del repositorio local.
-3. El flujo de ejecución sigue la dirección: `API` $\rightarrow$ `Domain` $\rightarrow$ `Data` (y viceversa para la consulta).
+## 3. Arquitectura y asincronía
+
+- **Dominio**: entidades, casos de uso e interfaz del repositorio. No importa clases de API ni de datos.
+- **Datos**: implementación en memoria del repositorio y DTO/mappers usados para la entrada de ejemplo.
+- **API/demo**: el controlador mapea la entrada y coordina los casos de uso; `Main` ejecuta la demo.
+- Las operaciones del repositorio son suspendibles. `observeAll()` publica cambios con `Flow`.
+
+## 4. Criterios de aceptación
+
+1. La sincronización omite entradas inválidas y guarda las válidas.
+2. La sincronización aplica el orden de prioridad y deduplica por ID.
+3. Las transiciones inválidas se rechazan y las actualizaciones concurrentes no aplican una transición sobre un estado obsoleto.
+4. El flujo atraviesa controlador, dominio e interfaz del repositorio hasta la implementación de datos.
+
+## 5. Fuera del alcance actual
+
+La conexión a una API externa y la persistencia durable podrán añadirse después detrás de las interfaces de datos.

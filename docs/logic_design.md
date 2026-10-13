@@ -1,26 +1,38 @@
-# Diseño Lógico: Motor de Sincronización de Tareas
+# Diseño lógico: motor de sincronización de tareas
 
-## 1. Arquitectura de Capas (Clean Architecture)
+## 1. Arquitectura
 
-El sistema sigue el principio de dependencias unidireccionales: la lógica de negocio es el centro y no conoce los detalles de la implementación externa.
+El dominio contiene las entidades, reglas y casos de uso. Define el contrato del repositorio y no importa implementaciones de API o datos. La demo usa DTOs como entrada; el controlador los convierte a entidades antes de llamar al caso de uso.
 
-### 1.1 Capa de Dominio (Domain) - El Núcleo
-Es la capa más pura y estable.
-- **Entidades**: Define la `Tarea` (Task) con sus atributos básicos y reglas de validación (ej: una tarea no puede estar vacía).
-- **Casos de Uso (Use Cases)**: Define la orquestación de la lógica.
-    - `SincronizarTareas`: Recibe datos externos $\rightarrow$ Valida $\rightarrow$ Guarda en repositorio.
-    - `CambiarEstadoTarea`: Valida la transición de estado (ej: de Pendiente a Completado).
-- **Interfaces de Repositorio**: Define el contrato de almacenamiento (qué se puede hacer con los datos), pero no cómo se guardan.
+### Dominio
 
-### 1.2 Capa de Datos (Data) - La Infraestructura
-Implementa los detalles técnicos.
-- **Implementación del Repositorio**: Realiza las operaciones reales de lectura/escritura en la base de datos o memoria.
-- **Data Sources**: Maneja la comunicación con la API externa.
-- **Mapeadores (Mappers)**: Convierte los objetos de la API (DTOs) en Entidades del Dominio.
+- `Task` valida sus datos al construirse.
+- `SyncTasksUseCase` recibe entidades `Task`, las ordena por prioridad y las guarda mediante `ITaskRepository`.
+- `UpdateTaskStatusUseCase` solicita al repositorio una actualización atómica. La transición se valida usando la tarea leída dentro de esa operación.
+- Las transiciones permitidas son Pendiente → Procesando y Procesando → Completado.
 
-### 1.3 Capa de API / Presentación (API)
-Es el punto de entrada al sistema.
-- **Controlador/Orquestador**: Recibe la petición del usuario, llama al Caso de Uso correspondiente y entrega la respuesta.
+### Datos
 
-## 2. Flujo de Datos (Data Flow)
-`API` $\rightarrow$ `UseCase` $\rightarrow$ `Repository (Interface)` $\rightarrow$ `Repository Implementation` $\rightarrow$ `Data Source`
+- `TaskRepositoryImpl` mantiene un mapa inmutable dentro de `MutableStateFlow`.
+- Un `Mutex` serializa `save` y `updateTask`. La transformación y validación ocurren bajo el mismo bloqueo; si la transformación falla, el estado no cambia.
+- `observeAll()` emite la lista inicial y las listas posteriores.
+- Los DTOs y el mapper convierten los datos de ejemplo a entidades. No hay comunicación con una API externa en el alcance actual.
+
+### API/demo
+
+- `TaskController` convierte los DTO a `Task`, omite los DTO inválidos y delega la sincronización y los cambios de estado a los casos de uso.
+- `Main` configura Koin, crea datos de ejemplo y ejecuta las operaciones suspendibles.
+
+## 2. Flujos
+
+Sincronización:
+
+`Main/demo → TaskController → mapper DTO→Task → SyncTasksUseCase → ITaskRepository → TaskRepositoryImpl`
+
+Cambio de estado:
+
+`TaskController → UpdateTaskStatusUseCase → updateTask atómico → validación + escritura bajo Mutex`
+
+Observación:
+
+`TaskRepositoryImpl.StateFlow → ITaskRepository.observeAll() → colector`
