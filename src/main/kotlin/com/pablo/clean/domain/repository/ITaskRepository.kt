@@ -1,9 +1,11 @@
 package com.pablo.clean.domain.repository
 
 import com.pablo.clean.domain.entities.Task
+import kotlinx.coroutines.flow.Flow
 
 interface ITaskRepository {
-    fun save(task: Task): Task
-    fun findById(id: String): Task?
-    fun findAll(): List<Task>
+    suspend fun save(task: Task): Task
+    suspend fun findById(id: String): Task?
+    suspend fun findAll(): List<Task>
+    fun observeAll(): Flow<List<Task>>
 }

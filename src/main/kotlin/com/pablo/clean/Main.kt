@@ -11,6 +11,7 @@ import com.pablo.clean.domain.usecases.UpdateTaskStatusUseCase
 import com.pablo.clean.data.repository.TaskRepositoryImpl
 import org.koin.core.context.startKoin
 import org.koin.dsl.module
+import kotlinx.coroutines.runBlocking
 
 val appModule = module {
     single<ITaskRepository> { TaskRepositoryImpl() }
@@ -19,7 +20,7 @@ val appModule = module {
     single { TaskController(get(), get()) }
 }
 
-fun main() {
+fun main() = runBlocking {
     println("=== Starting Task Sync Engine Demo ===")
 
     startKoin {

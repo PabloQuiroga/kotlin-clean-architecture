@@ -11,13 +11,13 @@ class TaskController(
     private val syncTasksUseCase: SyncTasksUseCase,
     private val updateTaskStatusUseCase: UpdateTaskStatusUseCase
 ) {
-    fun syncTasks(tasks: List<TaskDTO>) {
+    suspend fun syncTasks(tasks: List<TaskDTO>) {
         println("API: Starting task synchronization...")
         syncTasksUseCase.execute(tasks)
         println("API: Synchronization completed.")
     }
 
-    fun updateStatus(id: String, status: TaskStatus) {
+    suspend fun updateStatus(id: String, status: TaskStatus) {
         println("API: Updating status for task $id to $status...")
         try {
             updateTaskStatusUseCase.execute(id, status)

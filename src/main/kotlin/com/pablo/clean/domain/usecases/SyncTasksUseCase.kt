@@ -6,7 +6,7 @@ import com.pablo.clean.domain.entities.Task
 import com.pablo.clean.domain.repository.ITaskRepository
 
 class SyncTasksUseCase(private val repository: ITaskRepository) {
-    fun execute(tasks: List<TaskDTO>) {
+    suspend fun execute(tasks: List<TaskDTO>) {
         tasks.forEach { dto ->
             try {
                 val domainTask = dto.toDomain()

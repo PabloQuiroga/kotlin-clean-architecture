@@ -5,6 +5,7 @@ import com.pablo.clean.data.dto.TaskPriorityDTO
 import com.pablo.clean.data.dto.TaskStatusDTO
 import com.pablo.clean.domain.entities.Task
 import com.pablo.clean.domain.repository.ITaskRepository
+import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -16,7 +17,7 @@ class SyncTasksUseCaseTest {
     private val useCase = SyncTasksUseCase(repository)
 
     @Test
-    fun `should sync valid tasks and ignore invalid ones`() {
+    fun `should sync valid tasks and ignore invalid ones`() = runTest {
         val dtos = listOf(
             TaskDTO("1", "Valid Task", TaskPriorityDTO.HIGH, TaskStatusDTO.PENDING),
             TaskDTO("2", "", TaskPriorityDTO.LOW, TaskStatusDTO.PENDING) // Invalid: empty desc
@@ -29,7 +30,7 @@ class SyncTasksUseCaseTest {
     }
 
     @Test
-    fun `should update task if id already exists (deduplication)`() {
+    fun `should update task if id already exists (deduplication)`() = runTest {
         val existingTask = Task("1", "Old Description", com.pablo.clean.domain.entities.TaskPriority.LOW, com.pablo.clean.domain.entities.TaskStatus.PENDING)
         whenever(repository.findById("1")).thenReturn(existingTask)
 
