@@ -17,21 +17,21 @@ class UpdateTaskStatusUseCaseTest {
     @Test
     fun `should update task status successfully`() = runTest {
         val task = Task("1", "Test Task", TaskPriority.MEDIUM, TaskStatus.PENDING)
-        whenever(repository.findById("1")).thenReturn(task)
+        stubUpdate("1", task)
 
         useCase.execute("1", TaskStatus.PROCESSING)
 
-        verify(repository).save(argThat { this.status == TaskStatus.PROCESSING })
+        verify(repository).updateTask(eq("1"), any())
     }
 
     @Test
     fun `should allow completing a task that is processing`() = runTest {
         val task = Task("1", "Test Task", TaskPriority.MEDIUM, TaskStatus.PROCESSING)
-        whenever(repository.findById("1")).thenReturn(task)
+        stubUpdate("1", task)
 
         useCase.execute("1", TaskStatus.COMPLETED)
 
-        verify(repository).save(argThat { this.status == TaskStatus.COMPLETED })
+        verify(repository).updateTask(eq("1"), any())
     }
 
     @Test
@@ -44,21 +44,28 @@ class UpdateTaskStatusUseCaseTest {
         )
 
         invalidTransitions.forEach { (task, targetStatus) ->
-            whenever(repository.findById(task.id)).thenReturn(task)
+            stubUpdate(task.id, task)
             org.junit.jupiter.api.assertThrows<IllegalStateException> {
                 useCase.execute(task.id, targetStatus)
             }
         }
 
-        verify(repository, never()).save(any())
+        verify(repository, times(4)).updateTask(any(), any())
     }
 
     @Test
     fun `should throw exception when task is not found`() = runTest {
-        whenever(repository.findById("non-existent")).thenReturn(null)
+        whenever(repository.updateTask(eq("non-existent"), any())).thenReturn(null)
 
         org.junit.jupiter.api.assertThrows<NoSuchElementException> {
             useCase.execute("non-existent", TaskStatus.COMPLETED)
+        }
+    }
+
+    private suspend fun stubUpdate(id: String, task: Task) {
+        whenever(repository.updateTask(eq(id), any())).thenAnswer { invocation ->
+            val transform = invocation.getArgument<(Task) -> Task>(1)
+            transform(task)
         }
     }
 }
