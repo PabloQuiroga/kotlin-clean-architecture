@@ -1,29 +1,28 @@
-# Plan de Implementación: Motor de Sincronización de Tareas
+# Plan de implementación: motor de sincronización de tareas
 
-## 1. Tecnologías y Herramientas
-- **Lenguaje**: Kotlin 1.9+
-- **Asincronía**: Corrutinas (`Coroutines`) y `Flow` para flujos de datos.
-- **Inyección de Dependencias**: Koin (Ligero y eficiente para Kotlin).
-- **Construcción**: Gradle Kotlin DSL (`build.gradle.kts`).
-- **Validación**: JUnit 5 y MockK (para simular la API y el Repositorio).
+## Tecnologías
 
-## 2. Definición Técnica de Capas
+- Kotlin/JVM y Gradle Kotlin DSL.
+- Kotlin Coroutines y `Flow` para operaciones suspendibles y observación de cambios.
+- Koin para inyección de dependencias.
+- JUnit 5 y Mockito-Kotlin para pruebas.
+- `kotlinx-coroutines-test` para probar código suspendible y flujos.
 
-### 2.1 Capa de Dominio (Domain)
-- **Entities**: `Task` como una `data class` inmutable.
-- **Use Cases**: Clases como `SyncTasksUseCase` y `UpdateTaskStatusUseCase` con un único método `execute()`.
-- **Repository Interface**: Interfaz `ITaskRepository` definiendo los métodos de acceso a datos.
+## Capas
 
-### 2.2 Capa de Datos (Data)
-- **RepositoryImpl**: Implementación de `ITaskRepository` usando un mapa en memoria (inicialmente) para persistencia.
-- **DTOs**: Clases `TaskDTO` para representar la respuesta de la API externa.
-- **Mappers**: Funciones de extensión `TaskDTO.toDomain()` para convertir datos de API a Entidades.
+- **Dominio**: entidades, reglas de estado, casos de uso e interfaz del repositorio. El caso de uso de sincronización recibe entidades `Task`.
+- **Datos**: DTOs y mappers para convertir la entrada de demo a entidades; repositorio en memoria implementado con `StateFlow`.
+- **API/demo**: `TaskController` convierte DTOs a entidades y coordina los casos de uso; `Main` carga datos de ejemplo y ejecuta la aplicación.
 
-### 2.3 Capa de API (Presentation)
-- **Main/Controller**: Orquestador que lanza la corrutina principal y gestiona el ciclo de vida de la aplicación.
+## Alcance actual
 
-## 3. Estrategia de Validación
-- **Unit Tests**: Pruebas aisladas para cada Caso de Uso utilizando MockK para simular el repositorio.
-- **Integration Tests**: Validación del flujo completo desde la API hasta la persistencia.
-- **CI/CD**: Validación automática de la compilación y los tests mediante GitHub Actions.
-- 
+- La sincronización omite entradas inválidas y guarda por prioridad Alta → Media → Baja, conservando el orden de entrada entre prioridades iguales.
+- El cambio de estado solo permite Pendiente → Procesando → Completado.
+- El repositorio ofrece operaciones `suspend` y `observeAll()` como `Flow`.
+- Hay pruebas unitarias y un test de integración desde el controlador hasta el repositorio.
+- La entrada usa datos de demo y el almacenamiento es en memoria. No hay conexión a una API externa ni persistencia durable.
+- GitHub Actions ejecuta `./gradlew build` en pushes y pull requests a `main`.
+
+## Siguiente alcance posible
+
+- Incorporar una fuente externa o almacenamiento durable detrás de contratos de datos sin trasladar esos detalles al dominio.

@@ -1,8 +1,7 @@
 package com.pablo.clean.api
 
 import com.pablo.clean.data.dto.TaskDTO
-import com.pablo.clean.data.dto.TaskPriorityDTO
-import com.pablo.clean.data.dto.TaskStatusDTO
+import com.pablo.clean.data.mapper.toDomain
 import com.pablo.clean.domain.entities.TaskStatus
 import com.pablo.clean.domain.usecases.SyncTasksUseCase
 import com.pablo.clean.domain.usecases.UpdateTaskStatusUseCase
@@ -13,7 +12,14 @@ class TaskController(
 ) {
     suspend fun syncTasks(tasks: List<TaskDTO>) {
         println("API: Starting task synchronization...")
-        syncTasksUseCase.execute(tasks)
+        val domainTasks = tasks.mapNotNull { dto ->
+            try {
+                dto.toDomain()
+            } catch (_: IllegalArgumentException) {
+                null
+            }
+        }
+        syncTasksUseCase.execute(domainTasks)
         println("API: Synchronization completed.")
     }
 
