@@ -42,4 +42,23 @@ class SyncTasksUseCaseTest {
 
         verify(repository).save(argThat { this.description == "New Description" })
     }
+
+    @Test
+    fun `should sync tasks by priority and preserve input order for equal priorities`() = runTest {
+        val dtos = listOf(
+            TaskDTO("1", "Low", TaskPriorityDTO.LOW, TaskStatusDTO.PENDING),
+            TaskDTO("2", "High first", TaskPriorityDTO.HIGH, TaskStatusDTO.PENDING),
+            TaskDTO("3", "Medium", TaskPriorityDTO.MEDIUM, TaskStatusDTO.PENDING),
+            TaskDTO("4", "High second", TaskPriorityDTO.HIGH, TaskStatusDTO.PENDING)
+        )
+
+        useCase.execute(dtos)
+
+        val savedTasks = argumentCaptor<Task>()
+        verify(repository, times(4)).save(savedTasks.capture())
+        assertEquals(
+            listOf("High first", "High second", "Medium", "Low"),
+            savedTasks.allValues.map { it.description }
+        )
+    }
 }
